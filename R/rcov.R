@@ -3,17 +3,32 @@
 #' Decorate function body to be able to measure coverage
 #' @param f function object
 #' @export
-MonitorCoverage <- function(f) {
+MonitorCoverage <- function(func) {
     cache$k <- 1
-    cache$function.name <- deparse(substitute(f))
-    b <- MonitorCoverageHelper(as.list(body(f))[-1])
-    fr <- function(...){}
-    formals(fr) <- formals(f)
-    body(fr) <- as.call(c(as.name('{'), b))
-    assign(cache$function.name, vector(length=(cache$k - 1)), envir = cov.cache)
-    assign(cache$function.name, fr, envir = .GlobalEnv) 
+    cache$func.name <- deparse(substitute(func))
+    func.body <- MonitorCoverageHelper(as.list(body(func))[-1])
+    new.func <- function(...){}
+    formals(new.func) <- formals(func)
+    body(new.func) <- as.call(c(as.name('{'), func.body))
+    assign(cache$func.name, vector(length=(cache$k - 1)), envir = cov.cache)
+    assign(cache$func.name, new.func, envir = .GlobalEnv)
+    assign(cache$func.name, func, envir = func.cache)
     rm('k', envir = cache)
-    rm('function.name', envir = cache)
+    rm('func.name', envir = cache)
+}
+
+#' Replace function body for coverage measurement
+#'
+#' Decorate function body to be able to measure coverage
+#' @param f function object
+#' @export
+StopMonitoringCoverage <- function(func.name) {
+    if (func.name %in% ls(func.cache)) {
+        assign(func.name, func.cache$func.name, envir = .GlobalEnv)
+        rm(func.name, envir = func.cache)
+    } else {
+        stop("Function was not monitored for coverage")
+    }
 }
 
 #' Generic pander method
@@ -26,11 +41,21 @@ MonitorCoverage <- function(f) {
 MonitorCoverageHelper <- function(stmt.list) {
     for (i in 1:(length(stmt.list))) {
         if (DecStatement(stmt.list[[i]])) {
-            decl <- unlist(MonitorCoverageHelper(as.list(stmt.list[[i]])[-1]))
-            stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], decl))
+            if (stmt.list[[i]][[1]] != 'for') {
+                decl <- unlist(MonitorCoverageHelper(as.list(stmt.list[[i]])[-1]))
+                stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], decl))
+            } else {
+                temp.k <- cache$k
+                cache$k <- cache$k + 1
+                decl <- unlist(MonitorCoverageHelper(as.list(stmt.list[[i]])[-(1:3)]))
+                stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], stmt.list[[i]][[2]],  stmt.list[[i]][[3]], decl))
+                stmt.list[[i]] <- as.call(c(as.name("{"), 
+                                            parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$func.name, temp.k)), 
+                                            stmt.list[[i]]))
+            }
         } else {
             stmt.list[[i]] <- as.call(c(as.name("{"), 
-                                parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$function.name, cache$k)), 
+                                parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$func.name, cache$k)), 
                                 stmt.list[[i]]))
             cache$k <- cache$k + 1
         }
@@ -46,7 +71,7 @@ MonitorCoverageHelper <- function(stmt.list) {
 DecStatement <- function(stmt){
     if (length(stmt) <= 1)
         return(FALSE)
-    if (deparse(stmt[[1]]) %in% c('if', 'while', 'switch', '{'))
+    if (deparse(stmt[[1]]) %in% c('if', 'while', 'switch', '{', 'for'))
         return(TRUE)
     FALSE
 }
@@ -57,16 +82,12 @@ DecStatement <- function(stmt){
 #' @param f function object
 #' @export
 ReportCoverageInfo <- function(){
-    if (is.null(cache$cov.data)) {
-        cov.data <- data.frame(function.name = character(0), stmt = integer(0), mstmt = integer(0), cov = numeric(0))
-    } else {
-        cov.data <- cache$cov.data
-    }
+    cov.data <- data.frame(stmt = integer(0), mstmt = integer(0), cov = numeric(0))
     for(func in ls(cov.cache)) {
-        cov.data <- rbind(cov.data, list(func, 
-                                             length(cov.cache[[func]]), 
-                                             length(cov.cache[[func]]) - sum(cov.cache[[func]]), 
-                                             sum(cov.cache[[func]])/length(cov.cache[[func]])))    
+        cov.data <- do.call(rbind, list(cov.data, data.frame(stmt = length(cov.cache[[func]]), 
+                                             mstmt = length(cov.cache[[func]]) - sum(cov.cache[[func]]), 
+                                             cov = sum(cov.cache[[func]])/length(cov.cache[[func]]))))    
     }
+    row.names(cov.data) <- ls(cov.cache)
     cov.data
 }

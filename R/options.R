@@ -49,9 +49,27 @@
     ))
 }
 
+.onUnload <- function(libpath) {
+    for (func.name in ls(func.cache)) {
+        StopMonitoringCoverage(func.name)
+    }
+}
+
+.onAttach <- function(libname, pkgname){
+    rm(list=ls(.GlobalEnv), envir = .GlobalEnv)
+    source("R/testf.R")
+}
+
+.onDetach <- function(libpath) {
+    for (func.name in ls(func.cache)) {
+        StopMonitoringCoverage(func.name)
+    }
+}
+
 ## general (temporary) storage for rcov's stuff
 cov.cache <- new.env()
 cache <- new.env()
+func.cache <- new.env()
 
 #' Querying/setting rcov option
 #'
