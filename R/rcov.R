@@ -71,7 +71,7 @@ MonitorCoverageHelper <- function(stmt.list) {
 DecStatement <- function(stmt){
     if (length(stmt) <= 1)
         return(FALSE)
-    if (deparse(stmt[[1]]) %in% c('if', 'while', 'switch', '{', 'for'))
+    if (deparse(stmt[[1]]) %in% c('if', 'while', 'switch', '{', 'for', 'repeat'))
         return(TRUE)
     FALSE
 }
