@@ -1,9 +1,11 @@
 #' Replace function body for coverage measurement
 #'
-#' Decorate function body to be able to measure coverage
-#' @param func function object
+#' Decorate function body to be able to measure coverage. Function object is replaced in a proper namespace
+#' @param func function object to be monitored
 #' @export
 MonitorCoverage <- function(func) {
+    ## TODO support passing of function name
+    ## TODO check if not a function is being passed
     cache$k <- 1
     cache$func.name <- deparse(substitute(func))
     func.body <- as.list(body(func))
@@ -36,12 +38,13 @@ MonitorCoverage <- function(func) {
     rm('func.name', envir = cache)
 }
 
-#' Replace function body for coverage measurement
+#' Stop monitoring coverage for a function
 #'
-#' Decorate function body to be able to measure coverage
-#' @param f function object
+#' Function stop clears the annotation added to monitor coverage
+#' @param func.name
 #' @export
 StopMonitoringCoverage <- function(func.name) {
+    ## TODO support passing of function object
     if (func.name %in% ls(func.cache)) {
         assign(func.name, func.cache$func.name, envir = .GlobalEnv)
         rm(func.name, envir = func.cache)
@@ -50,16 +53,16 @@ StopMonitoringCoverage <- function(func.name) {
     }
 }
 
-#' Generic pander method
+#' Add coverage annotation to statement list
 #'
-#' Prints an R object in Pandoc's markdown.
-#' @param stmt.list statement
-#' @param ... optional parameters passed to special methods and/or raw \code{pandoc.*} functions
-#' @return By default this function outputs (see: \code{cat}) the result. If you would want to catch the result instead, then call the function ending in \code{.return}.
-#' @export
+#' Recursive decorator of statement list that adds annotations needed to measure coverage
+#' @param stmt.list statement list
+#' @return annotated statement list
+#' @aliases MonitorCoverage
 MonitorCoverageHelper <- function(stmt.list) {
+    ## TODO rename variables
     for (i in 1:(length(stmt.list))) {
-        if (DecStatement(stmt.list[[i]])) {
+        if (IsControlFlow(stmt.list[[i]])) {
             if (stmt.list[[i]][[1]] != 'for') {
                 decl <- unlist(MonitorCoverageHelper(as.list(stmt.list[[i]])[-1]))
                 stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], decl))
@@ -82,12 +85,13 @@ MonitorCoverageHelper <- function(stmt.list) {
     stmt.list
 }
 
-#' Replace function body for coverage measurement
+#' Is statment is a control flow statement
 #'
-#' Decorate function body to be able to measure coverage
-#' @param f function object
-#' @export
-DecStatement <- function(stmt){
+#' Check if statement is a control flow statement that needs special handling for coverage annotations
+#' @param stmt statement to be checked
+#' @return \code{TRUE/FALSE}
+#' @aliases MonitorCoverageHelper
+IsControlFlow <- function(stmt){
     if (length(stmt) <= 1)
         return(FALSE)
     if (deparse(stmt[[1]]) %in% c('if', 'while', 'switch', '{', 'for', 'repeat'))
@@ -95,17 +99,18 @@ DecStatement <- function(stmt){
     FALSE
 }
 
-#' Replace function body for coverage measurement
+#' Report Coverage Information
 #'
-#' Decorate function body to be able to measure coverage
-#' @param f function object
+#' Gather coverage information in a data frame and return it. Report contains following information per function - 
+#' total number of statements, number of non-executed statement, line coverage percentage.
+#' @return data.frame with coverage information
 #' @export
 ReportCoverageInfo <- function(){
     cov.data <- data.frame(stmt = integer(0), mstmt = integer(0), cov = numeric(0))
     for(func in ls(cov.cache)) {
         cov.data <- do.call(rbind, list(cov.data, data.frame(stmt = length(cov.cache[[func]]), 
                                              mstmt = length(cov.cache[[func]]) - sum(cov.cache[[func]]), 
-                                             cov = sum(cov.cache[[func]])/length(cov.cache[[func]]))))    
+                                             cov = format(100 * sum(cov.cache[[func]])/length(cov.cache[[func]]), digits = rcovOptions('digits')))))
     }
     row.names(cov.data) <- ls(cov.cache)
     cov.data

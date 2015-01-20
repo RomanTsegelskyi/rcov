@@ -2,14 +2,15 @@
 % Please edit documentation in R/rcov.R
 \name{ReportCoverageInfo}
 \alias{ReportCoverageInfo}
-\title{Replace function body for coverage measurement}
+\title{Report Coverage Information}
 \usage{
 ReportCoverageInfo()
 }
-\arguments{
-\item{f}{function object}
+\value{
+data.frame with coverage information
 }
 \description{
-Decorate function body to be able to measure coverage
+Gather coverage information in a data frame and return it. Report contains following information per function -
+total number of statements, number of non-executed statement, line coverage percentage.
 }
 

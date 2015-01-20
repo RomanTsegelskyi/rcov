@@ -4,12 +4,12 @@
 \alias{MonitorCoverage}
 \title{Replace function body for coverage measurement}
 \usage{
-MonitorCoverage(f)
+MonitorCoverage(func)
 }
 \arguments{
-\item{f}{function object}
+\item{func}{function object to be monitored}
 }
 \description{
-Decorate function body to be able to measure coverage
+Decorate function body to be able to measure coverage. Function object is replaced in a proper namespace
 }
 
