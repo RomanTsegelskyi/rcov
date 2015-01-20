@@ -1,5 +1,6 @@
 .onLoad <- function(libname, pkgname)
 {
+    require(utils)
     ## rcov settings
     options('rcov' = list(
         'digits'                   = 4,

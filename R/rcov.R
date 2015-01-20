@@ -1,17 +1,36 @@
 #' Replace function body for coverage measurement
 #'
 #' Decorate function body to be able to measure coverage
-#' @param f function object
+#' @param func function object
 #' @export
 MonitorCoverage <- function(func) {
     cache$k <- 1
     cache$func.name <- deparse(substitute(func))
-    func.body <- MonitorCoverageHelper(as.list(body(func))[-1])
+    func.body <- as.list(body(func))
+    if (func.body[[1]] != '{') {
+        func.body <- as.call(c(as.name("{"), body(func)))
+    } 
     new.func <- function(...){}
+    new.func.body <- MonitorCoverageHelper(as.list(func.body)[-1])
     formals(new.func) <- formals(func)
-    body(new.func) <- as.call(c(as.name('{'), func.body))
+    body(new.func) <- as.call(c(as.name('{'), new.func.body))
+    func.where <- getAnywhere(func)$where[1]
+    if (grepl('package', func.where)) {
+        package.name <- gsub('package:',  "\\1", "package:base")
+        func.where <- getNamespace(package.name)    
+        assign(cache$func.name, new.func, envir = .GlobalEnv)
+        if (bindingIsLocked(func, func.where)) {
+            unlockBinding(func, func.where)
+            assign(cache$func.name, new.func, envir = func.where)
+            lockBinding(func, func.where)
+        } else {
+            assign(cache$func.name, new.func, envir = func.where)
+        }       
+    } else {
+        assign(cache$func.name, new.func, envir = .GlobalEnv)
+    }
+    
     assign(cache$func.name, vector(length=(cache$k - 1)), envir = cov.cache)
-    assign(cache$func.name, new.func, envir = .GlobalEnv)
     assign(cache$func.name, func, envir = func.cache)
     rm('k', envir = cache)
     rm('func.name', envir = cache)
