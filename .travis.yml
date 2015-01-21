@@ -1,3 +1,6 @@
+#
+# Forked from Pander - https://github.com/Rapporter/pander/blob/master/.travis.yml
+#
 # it is not really python, but there is no R support on Travis CI yet
 language: python
 
