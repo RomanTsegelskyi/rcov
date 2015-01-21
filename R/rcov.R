@@ -20,6 +20,7 @@ MonitorCoverage <- function(func) {
     } else if (!is.function(func)) {
         stop("Supplied argument is neither a function object or a function name")
     } else {
+        func.obj <- func
         func.name <- deparse(substitute(func))
     }
     cache$k <- 1
@@ -34,7 +35,7 @@ MonitorCoverage <- function(func) {
     body(new.func) <- as.call(c(as.name('{'), new.func.body))
     func.where <- getAnywhere(func.name)$where[1]
     if (grepl('package', func.where)) {
-        package.name <- gsub('package:',  "\\1", "package:base")
+        package.name <- gsub('package:',  "\\1", func.where)
         func.where <- getNamespace(package.name)    
         if (bindingIsLocked(func.name, func.where)) {
             unlockBinding(func.name, func.where)
@@ -58,11 +59,30 @@ MonitorCoverage <- function(func) {
 #' Function stop clears the annotation added to monitor coverage
 #' @param func.name
 #' @export
-StopMonitoringCoverage <- function(func.name) {
-    ## TODO support passing of function object
+StopMonitoringCoverage <- function(func) {
+    if (is.character(func)) {
+        func.name <- func
+    } else if (is.function(func)) {
+        func.name <- deparse(substitute(func))
+    } else {
+        stop("Supplied argument is neither a function object or a function name")
+    }
     if (func.name %in% ls(func.cache)) {
-        assign(func.name, func.cache$func.name, envir = .GlobalEnv)
-        rm(func.name, envir = func.cache)
+        func.where <- getAnywhere(func.name)$where[1]
+        if (grepl('package', func.where)) {
+            package.name <- gsub('package:',  "\\1", func.where)
+            func.where <- getNamespace(package.name)    
+            if (bindingIsLocked(func.name, func.where)) {
+                unlockBinding(func.name, func.where)
+                assign(func.name, func.cache[[func.name]], envir = func.where)
+                lockBinding(func.name, func.where)
+            } else {
+                assign(func.name, func.cache[[func.name]], envir = func.where)
+            }       
+        } else {
+            assign(func.name, func.cache[[func.name]], envir = .GlobalEnv)
+        }
+        rm(list = c(func.name), envir = func.cache)
     } else {
         stop("Function was not monitored for coverage")
     }
