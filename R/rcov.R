@@ -76,10 +76,20 @@ MonitorCoverageHelper <- function(stmt.list) {
                                             stmt.list[[i]]))
             }
         } else {
-            stmt.list[[i]] <- as.call(c(as.name("{"), 
-                                parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$func.name, cache$k)), 
-                                stmt.list[[i]]))
-            cache$k <- cache$k + 1
+            if (stmt.list[[i]][[1]] != 'switch'){
+                stmt.list[[i]] <- as.call(c(as.name("{"), 
+                                            parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$func.name, cache$k)), 
+                                            stmt.list[[i]]))
+                cache$k <- cache$k + 1
+            } else {
+                temp.k <- cache$k
+                cache$k <- cache$k + 1
+                decl <- unlist(MonitorCoverageHelper(as.list(stmt.list[[i]])[-(1:2)]))
+                stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], stmt.list[[i]][[2]], decl))
+                stmt.list[[i]] <- as.call(c(as.name("{"), 
+                                            parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$func.name, temp.k)), 
+                                            stmt.list[[i]]))
+            }
         }
     }
     stmt.list
@@ -94,7 +104,7 @@ MonitorCoverageHelper <- function(stmt.list) {
 IsControlFlow <- function(stmt){
     if (length(stmt) <= 1)
         return(FALSE)
-    if (deparse(stmt[[1]]) %in% c('if', 'while', 'switch', '{', 'for', 'repeat'))
+    if (deparse(stmt[[1]]) %in% c('if', 'while', '{', 'for', 'repeat'))
         return(TRUE)
     FALSE
 }
@@ -109,8 +119,8 @@ ReportCoverageInfo <- function(){
     cov.data <- data.frame(stmt = integer(0), mstmt = integer(0), cov = numeric(0))
     for(func in ls(cov.cache)) {
         cov.data <- do.call(rbind, list(cov.data, data.frame(stmt = length(cov.cache[[func]]), 
-                                             mstmt = length(cov.cache[[func]]) - sum(cov.cache[[func]]), 
-                                             cov = format(100 * sum(cov.cache[[func]])/length(cov.cache[[func]]), digits = rcovOptions('digits')))))
+                                                             mstmt = length(cov.cache[[func]]) - sum(cov.cache[[func]]), 
+                                                             cov = format(100 * sum(cov.cache[[func]])/length(cov.cache[[func]]), digits = rcovOptions('digits')))))
     }
     row.names(cov.data) <- ls(cov.cache)
     cov.data
