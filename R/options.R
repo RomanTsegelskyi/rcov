@@ -1,5 +1,6 @@
 .onLoad <- function(libname, pkgname)
 {
+    require(utils)
     ## rcov settings
     options('rcov' = list(
         'digits'                   = 4,
@@ -43,6 +44,7 @@ func.cache <- new.env()
 #' @param o option name (string). See below.
 #' @param value value to assign (optional)
 #' @export
+#' @seealso \code{\link{evalsOptions}}
 #' @aliases rcov.option
 #' @note \code{rcov.option} is deprecated and is to be removed in future releases.
 #' @examples \dontrun{
@@ -63,6 +65,8 @@ rcovOptions <- function(o, value) {
         if (o %in% names(res))
             return(res[[o]])
         
+        pandoc.header('Possible `rcov` options:', style = 'setext')
+        pandoc.list(names(res))
         stop('Wrong option queried.')
         
     } else {

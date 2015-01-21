@@ -33,4 +33,7 @@ rcovOptions('digits')
 rcovOptions('digits', 5)
 }
 }
+\seealso{
+\code{\link{evalsOptions}}
+}
 

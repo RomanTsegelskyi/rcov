@@ -3,6 +3,7 @@
 #' Monitor coverage for functions while executing test files
 #' @param source.files files with function objects to be monitored for coverage
 #' @param execution.files files with tests
+#' @aliases MonitorCoverage, ReportCoverageInfo
 #' @export
 ReportCoverageFiles <- function(source.files, execution.files) {
     original.objects <- ls(envir = .GlobalEnv)

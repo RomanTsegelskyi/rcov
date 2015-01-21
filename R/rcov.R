@@ -2,11 +2,8 @@
 #'
 #' Decorate function body to be able to measure coverage. Function object is replaced in a proper namespace
 #' @param func function object to be monitored
-#' @param envir environment where to place the function. Primeraly used for debugging purposes
-#' @import utils
 #' @export
-MonitorCoverage <- function(func, envir) {
-    ### TODO check if function in not found in any environment
+MonitorCoverage <- function(func) {
     if (is.character(func)) {
         getAW <- getAnywhere(func)
         if (getAW$where[1] == '.GlobalEnv') {
@@ -26,38 +23,6 @@ MonitorCoverage <- function(func, envir) {
         func.obj <- func
         func.name <- deparse(substitute(func))
     }
-    new.func <- MonitorCoverageHelper(func.obj, func.name)
-    if (is.null(envir)){
-        func.where <- getAnywhere(func.name)$where[1]
-        if (grepl('package', func.where)) {
-            package.name <- gsub('package:',  "\\1", func.where)
-            func.where <- getNamespace(package.name)    
-            if (bindingIsLocked(func.name, func.where)) {
-                unlockBinding(func.name, func.where)
-                assign(cache$func.name, new.func, envir = func.where)
-                lockBinding(func.name, func.where)
-            } else {
-                assign(cache$func.name, new.func, envir = func.where)
-            }       
-        } else {
-            assign(cache$func.name, new.func, envir = .GlobalEnv)
-        }
-    } else {
-        assign(cache$func.name, new.func, envir = envir)
-    }
-    assign(cache$func.name, vector(length=(cache$k - 1)), envir = cov.cache)
-    assign(cache$func.name, func.obj, envir = func.cache)
-    rm('k', envir = cache)
-    rm('func.name', envir = cache)
-    invisible()
-}
-
-#' Create new function with coverage annotation
-#'
-#' Change function body to add statements needed to measure code coverage
-#' @param func.obj function to be changed
-#' @param func.name function name 
-MonitorCoverageHelper <- function(func.obj, func.name) {
     cache$k <- 1
     cache$func.name <- func.name
     func.body <- as.list(body(func.obj))
@@ -65,19 +30,36 @@ MonitorCoverageHelper <- function(func.obj, func.name) {
         func.body <- as.call(c(as.name("{"), body(func.obj)))
     } 
     new.func <- function(...){}
-    new.func.body <- CoverageAnnotationDecorator(as.list(func.body)[-1])
+    new.func.body <- MonitorCoverageHelper(as.list(func.body)[-1])
     formals(new.func) <- formals(func.obj)
     body(new.func) <- as.call(c(as.name('{'), new.func.body))
-    new.func
+    func.where <- getAnywhere(func.name)$where[1]
+    if (grepl('package', func.where)) {
+        package.name <- gsub('package:',  "\\1", func.where)
+        func.where <- getNamespace(package.name)    
+        if (bindingIsLocked(func.name, func.where)) {
+            unlockBinding(func.name, func.where)
+            assign(cache$func.name, new.func, envir = func.where)
+            lockBinding(func.name, func.where)
+        } else {
+            assign(cache$func.name, new.func, envir = func.where)
+        }       
+    } else {
+        assign(cache$func.name, new.func, envir = .GlobalEnv)
+    }
+    
+    assign(cache$func.name, vector(length=(cache$k - 1)), envir = cov.cache)
+    assign(cache$func.name, func.obj, envir = func.cache)
+    rm('k', envir = cache)
+    rm('func.name', envir = cache)
 }
 
 #' Stop monitoring coverage for a function
 #'
 #' Function stop clears the annotation added to monitor coverage
-#' @param func function or function name
-#' @param envir environment where function with coverage annotation was placed. Primeraly used for debugging purposes
+#' @param func.name
 #' @export
-StopMonitoringCoverage <- function(func, envir) {
+StopMonitoringCoverage <- function(func) {
     if (is.character(func)) {
         func.name <- func
     } else if (is.function(func)) {
@@ -86,26 +68,21 @@ StopMonitoringCoverage <- function(func, envir) {
         stop("Supplied argument is neither a function object or a function name")
     }
     if (func.name %in% ls(func.cache)) {
-        if (is.null(envir)) {
-            func.where <- getAnywhere(func.name)$where[1]
-            if (grepl('package', func.where)) {
-                package.name <- gsub('package:',  "\\1", func.where)
-                func.where <- getNamespace(package.name)    
-                if (bindingIsLocked(func.name, func.where)) {
-                    unlockBinding(func.name, func.where)
-                    assign(func.name, func.cache[[func.name]], envir = func.where)
-                    lockBinding(func.name, func.where)
-                } else {
-                    assign(func.name, func.cache[[func.name]], envir = func.where)
-                }       
+        func.where <- getAnywhere(func.name)$where[1]
+        if (grepl('package', func.where)) {
+            package.name <- gsub('package:',  "\\1", func.where)
+            func.where <- getNamespace(package.name)    
+            if (bindingIsLocked(func.name, func.where)) {
+                unlockBinding(func.name, func.where)
+                assign(func.name, func.cache[[func.name]], envir = func.where)
+                lockBinding(func.name, func.where)
             } else {
-                assign(func.name, func.cache[[func.name]], envir = .GlobalEnv)
-            }
+                assign(func.name, func.cache[[func.name]], envir = func.where)
+            }       
         } else {
-            assign(func.name, func.cache[[func.name]], envir = envir)
+            assign(func.name, func.cache[[func.name]], envir = .GlobalEnv)
         }
         rm(list = c(func.name), envir = func.cache)
-        rm(list = c(func.name), envir = cov.cache)
     } else {
         stop("Function was not monitored for coverage")
     }
@@ -116,17 +93,18 @@ StopMonitoringCoverage <- function(func, envir) {
 #' Recursive decorator of statement list that adds annotations needed to measure coverage
 #' @param stmt.list statement list
 #' @return annotated statement list
-CoverageAnnotationDecorator <- function(stmt.list) {
+#' @aliases MonitorCoverage
+MonitorCoverageHelper <- function(stmt.list) {
     ## TODO rename variables
     for (i in 1:(length(stmt.list))) {
         if (IsControlFlow(stmt.list[[i]])) {
             if (stmt.list[[i]][[1]] != 'for') {
-                decl <- unlist(CoverageAnnotationDecorator(as.list(stmt.list[[i]])[-1]))
+                decl <- unlist(MonitorCoverageHelper(as.list(stmt.list[[i]])[-1]))
                 stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], decl))
             } else {
                 temp.k <- cache$k
                 cache$k <- cache$k + 1
-                decl <- unlist(CoverageAnnotationDecorator(as.list(stmt.list[[i]])[-(1:3)]))
+                decl <- unlist(MonitorCoverageHelper(as.list(stmt.list[[i]])[-(1:3)]))
                 stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], stmt.list[[i]][[2]],  stmt.list[[i]][[3]], decl))
                 stmt.list[[i]] <- as.call(c(as.name("{"), 
                                             parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$func.name, temp.k)), 
@@ -141,7 +119,7 @@ CoverageAnnotationDecorator <- function(stmt.list) {
             } else {
                 temp.k <- cache$k
                 cache$k <- cache$k + 1
-                decl <- unlist(CoverageAnnotationDecorator(as.list(stmt.list[[i]])[-(1:2)]))
+                decl <- unlist(MonitorCoverageHelper(as.list(stmt.list[[i]])[-(1:2)]))
                 stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], stmt.list[[i]][[2]], decl))
                 stmt.list[[i]] <- as.call(c(as.name("{"), 
                                             parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$func.name, temp.k)), 
@@ -157,6 +135,7 @@ CoverageAnnotationDecorator <- function(stmt.list) {
 #' Check if statement is a control flow statement that needs special handling for coverage annotations
 #' @param stmt statement to be checked
 #' @return \code{TRUE/FALSE}
+#' @aliases MonitorCoverageHelper
 IsControlFlow <- function(stmt){
     if (length(stmt) <= 1)
         return(FALSE)
