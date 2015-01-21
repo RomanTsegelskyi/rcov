@@ -1,9 +1,13 @@
 Package: rcov
 Type: Package
-Title: What the package does (short line)
-Version: 1.0
+Title: Code coverage tool for R
+Version: 0.1
 Date: 2015-01-15
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Author: Roman Tsegelskyi <roman.tsegelskyi@gmail.com>
+Maintainer: Roman Tsegelskyi <roman.tsegelskyi@gmail.com>
+Description: Contains needed machinery for measuring code coverage for R packages
+Licence: ???
+Depends:
+    R (>= 3.0.0)
+Imports:
+    utils
