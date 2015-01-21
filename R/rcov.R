@@ -4,27 +4,42 @@
 #' @param func function object to be monitored
 #' @export
 MonitorCoverage <- function(func) {
-    ## TODO support passing of function name
-    ## TODO check if not a function is being passed
+    if (is.character(func)) {
+        getAW <- getAnywhere(func)
+        if (getAW$where[1] == '.GlobalEnv') {
+            if (length(getAW$where) > 1) {
+                warning("Found multiple instances. Taking the one from GlobalEnv")
+            } 
+        } else {
+            if (length(getAW$where) > 2) {
+                stop("Function found in more than one package. Please supply the exact function")
+            }
+        }
+        func.obj <- getAW$obj[[1]]
+        func.name <- func
+    } else if (!is.function(func)) {
+        stop("Supplied argument is neither a function object or a function name")
+    } else {
+        func.name <- deparse(substitute(func))
+    }
     cache$k <- 1
-    cache$func.name <- deparse(substitute(func))
-    func.body <- as.list(body(func))
+    cache$func.name <- func.name
+    func.body <- as.list(body(func.obj))
     if (func.body[[1]] != '{') {
-        func.body <- as.call(c(as.name("{"), body(func)))
+        func.body <- as.call(c(as.name("{"), body(func.obj)))
     } 
     new.func <- function(...){}
     new.func.body <- MonitorCoverageHelper(as.list(func.body)[-1])
-    formals(new.func) <- formals(func)
+    formals(new.func) <- formals(func.obj)
     body(new.func) <- as.call(c(as.name('{'), new.func.body))
-    func.where <- getAnywhere(func)$where[1]
+    func.where <- getAnywhere(func.name)$where[1]
     if (grepl('package', func.where)) {
         package.name <- gsub('package:',  "\\1", "package:base")
         func.where <- getNamespace(package.name)    
-        assign(cache$func.name, new.func, envir = .GlobalEnv)
-        if (bindingIsLocked(func, func.where)) {
-            unlockBinding(func, func.where)
+        if (bindingIsLocked(func.name, func.where)) {
+            unlockBinding(func.name, func.where)
             assign(cache$func.name, new.func, envir = func.where)
-            lockBinding(func, func.where)
+            lockBinding(func.name, func.where)
         } else {
             assign(cache$func.name, new.func, envir = func.where)
         }       
@@ -33,7 +48,7 @@ MonitorCoverage <- function(func) {
     }
     
     assign(cache$func.name, vector(length=(cache$k - 1)), envir = cov.cache)
-    assign(cache$func.name, func, envir = func.cache)
+    assign(cache$func.name, func.obj, envir = func.cache)
     rm('k', envir = cache)
     rm('func.name', envir = cache)
 }
@@ -76,7 +91,7 @@ MonitorCoverageHelper <- function(stmt.list) {
                                             stmt.list[[i]]))
             }
         } else {
-            if (stmt.list[[i]][[1]] != 'switch'){
+            if (is.symbol(stmt.list[[i]]) || stmt.list[[i]][[1]] != 'switch'){
                 stmt.list[[i]] <- as.call(c(as.name("{"), 
                                             parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$func.name, cache$k)), 
                                             stmt.list[[i]]))
