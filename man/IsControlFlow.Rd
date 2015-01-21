@@ -2,7 +2,6 @@
 % Please edit documentation in R/rcov.R
 \name{IsControlFlow}
 \alias{IsControlFlow}
-\alias{MonitorCoverageHelper}
 \title{Is statment is a control flow statement}
 \usage{
 IsControlFlow(stmt)

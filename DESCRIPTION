@@ -6,8 +6,9 @@ Date: 2015-01-15
 Author: Roman Tsegelskyi <roman.tsegelskyi@gmail.com>
 Maintainer: Roman Tsegelskyi <roman.tsegelskyi@gmail.com>
 Description: Contains needed machinery for measuring code coverage for R packages
-Licence: ???
-Depends:
+License: ???
+Depends: 
     R (>= 3.0.0)
-Imports:
+Imports: 
     utils
+Suggests: testthat
