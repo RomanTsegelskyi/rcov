@@ -1,22 +1,25 @@
-# it is not really python, but there is no R support on Travis CI yet
-language: python
+# Sample .travis.yml for R projects from https://github.com/craigcitro/r-travis
 
-# environment variables
-env:
-  - R_LIBS_USER=~/R
+language: c
 
-# install dependencies
+before_install:
+  - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
+  - chmod 755 ./travis-tool.sh
+  - ./travis-tool.sh bootstrap
+
 install:
-  - sudo add-apt-repository 'deb http://cran.r-project.org/bin/linux/ubuntu precise/' 
-  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
-  - sudo apt-get update
-  - mkdir ~/R"
-  - R --version
-  - R -e '.libPaths(); sessionInfo()'
-  - Rscript -e 'install.packages("testthat", dep = TRUE, repos = "http://cran.r-project.org")'
+  - ./travis-tool.sh github_package jimhester/covr
+  - ./travis-tool.sh install_deps
 
-# run tests
-script:
-  - make install
-  - make check
-  - make test
+script: ./travis-tool.sh run_tests
+
+after_failure:
+  - ./travis-tool.sh dump_logs
+
+env:
+  - WARNINGS_ARE_ERRORS=1
+
+notifications:
+  email:
+    on_success: change
+    on_failure: change
