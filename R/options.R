@@ -15,7 +15,7 @@
 
 # temporary solution for testing
 .onAttach <- function(libname, pkgname){
-    rm(list=ls(.GlobalEnv), envir = .GlobalEnv)
+#     rm(list=ls(.GlobalEnv), envir = .GlobalEnv)
     #source("testf.R")
 }
 

@@ -11,32 +11,32 @@ slow.power <- function(x, p) {
 }, slow.power.mot = 
 slow.power.mot <- function (x, p) 
 {
-    {
-        cov.cache$slow.power[1] <- TRUE
-        r <- 1
+{
+    rcov:::SetExecuteValue("slow.power", 1)
+    r <- 1
+}
+if ({
+    rcov:::SetExecuteValue("slow.power", 2)
+    p >= 1
+}) {
+{
+    rcov:::SetExecuteValue("slow.power", 3)
+    for (i in 1:(p - 1)) {
+        rcov:::SetExecuteValue("slow.power", 4)
+        r <- r * x
     }
-    if ({
-        cov.cache$slow.power[2] <- TRUE
-        p >= 1
-    }) {
-        {
-            cov.cache$slow.power[3] <- TRUE
-            for (i in 1:(p - 1)) {
-                cov.cache$slow.power[4] <- TRUE
-                r <- r * x
-            }
-        }
-    }
-    {
-        cov.cache$slow.power[5] <- TRUE
-        r
-    }
+}
+}
+{
+    rcov:::SetExecuteValue("slow.power", 5)
+    r
+}
 })
 
 test_that('Monitor coverage works correctly', {
     expect_that(MonitorCoverageHelper(slow.power, 'slow.power'), is_a('function'))
     expect_null(cov.cache$slow.power)
-    expect_equal(MonitorCoverageHelper(slow.power, 'slow.power'), functions$slow.power.mot)
+    expect_equal(MonitorCoverageHelper(functions$slow.power, 'slow.power'), functions$slow.power.mot)
     slow.power <- functions$slow.power
     MonitorCoverage(slow.power, environment())
     expect_equal(slow.power, slow.power.mot)

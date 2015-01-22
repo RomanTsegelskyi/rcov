@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/RomanTsegelskyi/rcov.svg?branch=master)](https://travis-ci.org/RomanTsegelskyi/rcov)
 # RCov - Coverage of R code
 
 The main aim of the *rcov* [R](http://r-project.org) package is to provide a tool for measuring different types of code coverage for R code. 

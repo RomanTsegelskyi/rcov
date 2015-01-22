@@ -27,26 +27,23 @@ MonitorCoverage <- function(func, envir) {
         func.name <- deparse(substitute(func))
     }
     new.func <- MonitorCoverageHelper(func.obj, func.name)
-    if (is.null(envir)){
-        func.where <- getAnywhere(func.name)$where[1]
-        if (grepl('package', func.where)) {
-            package.name <- gsub('package:',  "\\1", func.where)
-            func.where <- getNamespace(package.name)    
-            if (bindingIsLocked(func.name, func.where)) {
-                unlockBinding(func.name, func.where)
-                assign(cache$func.name, new.func, envir = func.where)
-                lockBinding(func.name, func.where)
-            } else {
-                assign(cache$func.name, new.func, envir = func.where)
-            }       
+    environment(new.func) <- environment(func.obj)
+    if (missing(envir)){
+        func.where.package <- getAnywhere(func.name)$where[2]
+        if (!is.null(func.where.package) && grepl('namespace', func.where.package)) {
+            package.name <- gsub('namespace:',  "\\1", func.where.package)
+            func.package.namespace <- getNamespace(package.name)   
+            func.package.env <- as.environment(paste("package", package.name, sep=":"))
+            reassignInEnv(func.name, new.func, func.package.namespace)
+            reassignInEnv(func.name, new.func, func.package.env)
         } else {
-            assign(cache$func.name, new.func, envir = .GlobalEnv)
+            assign(func.name, new.func, envir = .GlobalEnv)
         }
     } else {
-        assign(cache$func.name, new.func, envir = envir)
+        assign(func.name, new.func, envir = envir)
     }
-    assign(cache$func.name, vector(length=(cache$k - 1)), envir = cov.cache)
-    assign(cache$func.name, func.obj, envir = func.cache)
+    assign(func.name, vector(length=(cache$k - 1)), envir = cov.cache)
+    assign(func.name, func.obj, envir = func.cache)
     rm('k', envir = cache)
     rm('func.name', envir = cache)
     invisible()
@@ -86,18 +83,14 @@ StopMonitoringCoverage <- function(func, envir) {
         stop("Supplied argument is neither a function object or a function name")
     }
     if (func.name %in% ls(func.cache)) {
-        if (is.null(envir)) {
-            func.where <- getAnywhere(func.name)$where[1]
-            if (grepl('package', func.where)) {
-                package.name <- gsub('package:',  "\\1", func.where)
-                func.where <- getNamespace(package.name)    
-                if (bindingIsLocked(func.name, func.where)) {
-                    unlockBinding(func.name, func.where)
-                    assign(func.name, func.cache[[func.name]], envir = func.where)
-                    lockBinding(func.name, func.where)
-                } else {
-                    assign(func.name, func.cache[[func.name]], envir = func.where)
-                }       
+        if (missing(envir)) {
+            func.where.package <- getAnywhere(func.name)$where[1]
+            if (grepl('package', func.where.package)) {
+                package.name <- gsub('package:',  "\\1", func.where.package)
+                func.package.namespace <- getNamespace(package.name)   
+                func.package.env <- as.environment(func.where.package)
+                reassignInEnv(func.name, func.cache[[func.name]], func.package.namespace)
+                reassignInEnv(func.name, func.cache[[func.name]], func.package.env)
             } else {
                 assign(func.name, func.cache[[func.name]], envir = .GlobalEnv)
             }
@@ -129,13 +122,13 @@ CoverageAnnotationDecorator <- function(stmt.list) {
                 decl <- unlist(CoverageAnnotationDecorator(as.list(stmt.list[[i]])[-(1:3)]))
                 stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], stmt.list[[i]][[2]],  stmt.list[[i]][[3]], decl))
                 stmt.list[[i]] <- as.call(c(as.name("{"), 
-                                            parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$func.name, temp.k)), 
+                                            parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, temp.k)), 
                                             stmt.list[[i]]))
             }
         } else {
             if (is.symbol(stmt.list[[i]]) || stmt.list[[i]][[1]] != 'switch'){
                 stmt.list[[i]] <- as.call(c(as.name("{"), 
-                                            parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$func.name, cache$k)), 
+                                            parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, cache$k)), 
                                             stmt.list[[i]]))
                 cache$k <- cache$k + 1
             } else {
@@ -144,7 +137,7 @@ CoverageAnnotationDecorator <- function(stmt.list) {
                 decl <- unlist(CoverageAnnotationDecorator(as.list(stmt.list[[i]])[-(1:2)]))
                 stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], stmt.list[[i]][[2]], decl))
                 stmt.list[[i]] <- as.call(c(as.name("{"), 
-                                            parse(text=sprintf("cov.cache$%s[%d] <- TRUE", cache$func.name, temp.k)), 
+                                            parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, temp.k)), 
                                             stmt.list[[i]]))
             }
         }
@@ -180,4 +173,13 @@ ReportCoverageInfo <- function(){
     }
     row.names(cov.data) <- ls(cov.cache)
     cov.data
+}
+
+#' Write down that line was executed
+#'
+#' Record that particual line was executed. Used in statement coverage, needed for namespace replacement
+#' @param func.name function name
+#' @param line.number line.number
+SetExecuteValue <- function(func.name, line.number) {
+    cov.cache[[func.name]][line.number] <- TRUE
 }
