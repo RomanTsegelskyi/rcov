@@ -13,5 +13,5 @@ reassignInEnv <- function(name, obj, env) {
         } else {
             assign(name, obj, envir = env)
         }
-    }
+    } 
 }
