@@ -87,13 +87,16 @@ StopMonitoringCoverage <- function(func, envir) {
     }
     if (func.name %in% ls(func.cache)) {
         if (missing(envir)) {
-            func.where.package <- getAnywhere(func.name)$where[1]
-            if (grepl('package', func.where.package)) {
-                package.name <- gsub('package:',  "\\1", func.where.package)
+            package.name <-gsub('namespace:',  "\\1",getAnywhere(func.name)$where[grep("^namespace", getAnywhere(func.name)$where)])
+            if (!is.null(package.name)) {
                 func.package.namespace <- getNamespace(package.name)   
-                func.package.env <- as.environment(func.where.package)
+                func.package.env <- as.environment(paste("package", package.name, sep=":"))
                 reassignInEnv(func.name, func.cache[[func.name]], func.package.namespace)
                 reassignInEnv(func.name, func.cache[[func.name]], func.package.env)
+                if (any(grepl('registered S3 method', getAnywhere(func.name)$where))) { # checking if its an S3 method
+                    S3Table <- get(".__S3MethodsTable__.", envir = getNamespace(package.name))
+                    assign(func.name, func.cache[[func.name]], S3Table)
+                }
             } else {
                 assign(func.name, func.cache[[func.name]], envir = .GlobalEnv)
             }
