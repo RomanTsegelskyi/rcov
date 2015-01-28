@@ -30,7 +30,7 @@ MonitorCoverage <- function(func, envir) {
     environment(new.func) <- environment(func.obj)
     if (missing(envir)){
         package.name <-gsub('namespace:',  "\\1",getAnywhere(func.name)$where[grep("^namespace", getAnywhere(func.name)$where)])
-        if (!is.null(package.name)) {
+        if (length(package.name) > 0) {
             func.package.namespace <- getNamespace(package.name)   
             func.package.env <- as.environment(paste("package", package.name, sep=":"))
             reassignInEnv(func.name, new.func, func.package.namespace)
@@ -88,7 +88,7 @@ StopMonitoringCoverage <- function(func, envir) {
     if (func.name %in% ls(func.cache)) {
         if (missing(envir)) {
             package.name <-gsub('namespace:',  "\\1",getAnywhere(func.name)$where[grep("^namespace", getAnywhere(func.name)$where)])
-            if (!is.null(package.name)) {
+            if (length(package.name) > 0) {
                 func.package.namespace <- getNamespace(package.name)   
                 func.package.env <- as.environment(paste("package", package.name, sep=":"))
                 reassignInEnv(func.name, func.cache[[func.name]], func.package.namespace)
@@ -175,7 +175,7 @@ ReportCoverageInfo <- function(){
     for(func in ls(cov.cache)) {
         cov.data <- do.call(rbind, list(cov.data, data.frame(stmt = length(cov.cache[[func]]), 
                                                              mstmt = length(cov.cache[[func]]) - sum(cov.cache[[func]]), 
-                                                             cov = format(100 * sum(cov.cache[[func]])/length(cov.cache[[func]]), digits = rcovOptions('digits')))))
+                                                             cov = sum(cov.cache[[func]])/length(cov.cache[[func]]))))
     }
     row.names(cov.data) <- ls(cov.cache)
     cov.data

@@ -4,12 +4,17 @@
 \alias{ReportCoverageFiles}
 \title{Measure coverage of files using tests}
 \usage{
-ReportCoverageFiles(source.files, execution.files)
+ReportCoverageFiles(source.files, execution.files, ...,
+  report.by.file = FALSE)
 }
 \arguments{
 \item{source.files}{files with function objects to be monitored for coverage}
 
 \item{execution.files}{files with tests}
+
+\item{...}{for specific tests separeted by commas}
+
+\item{report.by.file}{if report should be by file or by function}
 }
 \description{
 Monitor coverage for functions while executing test files

@@ -1,5 +1,5 @@
 context('S3')
-install.packages("PackageS3/", repos = NULL, type="source", verbose = FALSE, quiet = TRUE)
+install.packages("~/rcov/tests/testthat/PackageS3/", repos = NULL, type="source", verbose = FALSE, quiet = TRUE)
 
 test_that('Custom package S3 replacement works', {
     require(PackageS3, quiet = T)
@@ -21,7 +21,7 @@ test_that('Custom package S3 replacement works', {
     expect_output(test(data.frame()), "Default version is called")
     cov.data <- ReportCoverageInfo()
     expect_true(all(cov.data$mstmt == 0))
-    expect_true(all(cov.data$cov == 100))
+    expect_true(all(cov.data$cov == 1))
     StopMonitoringCoverage("test.logical")
     StopMonitoringCoverage("test.numeric")
     StopMonitoringCoverage("test.default")
