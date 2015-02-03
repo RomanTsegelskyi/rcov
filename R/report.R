@@ -61,3 +61,18 @@ ReportCoverageFiles <- function(source.files, execution.files, ..., report.by.fi
     }
     res
 }
+
+
+#' Measure coverage of a package
+#'
+#' Monitor coverage of a package
+#' @param package.dir package directory
+#' @param ... for specific tests separeted by commas
+#' @export
+ReportPackageCoverage <- function(package.dir, ...) {
+    if (!file.exists(path)){
+        return(NULL)
+    }
+    tests <- eval(substitute(alist(...)))
+    
+}

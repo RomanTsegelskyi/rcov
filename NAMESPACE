@@ -3,6 +3,7 @@
 export(MonitorCoverage)
 export(ReportCoverageFiles)
 export(ReportCoverageInfo)
+export(ReportPackageCoverage)
 export(StopMonitoringCoverage)
 export(rcov.option)
 export(rcovOptions)
