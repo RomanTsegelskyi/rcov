@@ -15,17 +15,22 @@ MonitorCoverage <- function(func, envir) {
             } 
         } else {
             if (length(getAW$where) > 2) {
-                stop("Function found in more than one package. Please supply the exact function")
+                warning("Function found in more than one package. Please supply the exact function")
+                return(NULL);
             }
         }
         func.obj <- getAW$obj[[1]]
         func.name <- func
-    } else if (!is.function(func)) {
-        stop("Supplied argument is neither a function object or a function name")
-    } else {
+    } else if (is.function(func)) {
         func.obj <- func
         func.name <- deparse(substitute(func))
+    } else {
+        warning("Supplied argument is neither a function object or a function name")
+        return(NULL)
     }
+    if (!is.function(func.obj))
+        return(NULL)
+    cat("Func name - ", func.name, "\n")
     new.func <- MonitorCoverageHelper(func.obj, func.name)
     environment(new.func) <- environment(func.obj)
     if (missing(envir)){
@@ -106,7 +111,7 @@ StopMonitoringCoverage <- function(func, envir) {
         rm(list = c(func.name), envir = func.cache)
         rm(list = c(func.name), envir = cov.cache)
     } else {
-        stop("Function was not monitored for coverage")
+        warning("Function was not monitored for coverage")
     }
 }
 

@@ -15,3 +15,17 @@ reassignInEnv <- function(name, obj, env) {
         }
     } 
 }
+
+#' Find test directory in the path
+#'
+#' Find testthat test directory in the path
+#' @param path search path
+GetTestDir<- function(path) {
+    if(file.exists(file.path(path, "tests"))) {
+        file.path(path, "tests")
+    } else if (file.exists(file.path(path, "inst", "tests"))) {
+        file.path(path, "inst", "tests")
+    } else {
+        stop("No testing directory found", .call = FALSE)
+    }
+}

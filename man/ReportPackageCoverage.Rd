@@ -4,7 +4,7 @@
 \alias{ReportPackageCoverage}
 \title{Measure coverage of a package}
 \usage{
-ReportPackageCoverage(package.dir, ...)
+ReportPackageCoverage(package.dir, ..., test.dir = "tests/")
 }
 \arguments{
 \item{package.dir}{package directory}

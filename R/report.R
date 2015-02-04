@@ -70,9 +70,39 @@ ReportCoverageFiles <- function(source.files, execution.files, ..., report.by.fi
 #' @param ... for specific tests separeted by commas
 #' @export
 ReportPackageCoverage <- function(package.dir, ...) {
-    if (!file.exists(path)){
+    if (!file.exists(package.dir)){
         return(NULL)
     }
+    test.dir <- GetTestDir(package.dir)
     tests <- eval(substitute(alist(...)))
-    
+    if (file.exists(test.dir) || length(tests) > 0) {
+        ns <- devtools::load_all(package.dir, export_all = FALSE, quiet = TRUE, recompile = TRUE)$env
+        env <- new.env(parent = ns)
+        tests <-
+            c(tests,
+              if (file.exists(test.dir)) {
+                  bquote(try(testthat::source_dir(path = .(test.dir), env = .(env))))
+              })
+        res <- ReportEnvironmentCoverage(ns, tests, enclos = .GlobalEnv)
+    }
+    res
+}
+
+#' Measure coverage of an environment
+#'
+#' Monitor coverage of an environment using tests
+#' @param envir environment to monitor coverage in
+#' @param ... for specific tests separeted by commas
+#' @param enclos environment where tests should be evaluated
+#' @export
+ReportEnvironmentCoverage <- function(envir, tests, enclos = parent.frame()) {
+#     tests <- eval(substitute(alist(...)))
+    objects <- ls(envir)
+    sapply(objects, MonitorCoverage)
+    for (test in tests) {
+        eval(test, enclos)
+    }
+    res <- ReportCoverageInfo()
+    sapply(objects, StopMonitoringCoverage)
+    res
 }

@@ -1,19 +1,19 @@
 #' @export
-test <- function(x, ...){
-    UseMethod('test', x)
+testS3 <- function(x, ...){
+    UseMethod('testS3', x)
 }
 
 #' @export
-test.numeric <- function(x, ...) {
-    cat("Numeric version called")
+testS3.numeric <- function(x, ...) {
+    cat("Numeric version called\n")
 }
 
 #' @export
-test.logical <- function(x, ...) {
-    cat("Logical version is called")
+testS3.logical <- function(x, ...) {
+    cat("Logical version is called\n")
 }
 
 #' @export
-test.default <- function(x, ...) {
-    cat("Default version is called")
+testS3.default <- function(x, ...) {
+    cat("Default version is called\n")
 }
