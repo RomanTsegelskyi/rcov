@@ -11,4 +11,5 @@ Depends:
     R (>= 3.0.0)
 Imports: 
     utils
+    devtools
 Suggests: testthat
