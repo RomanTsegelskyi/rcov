@@ -1,5 +1,5 @@
 context('S3')
-require(devtools, quite = T)
+require(devtools, quiet = T)
 devtools::load_all("./PackageS3", export_all = FALSE, quiet = TRUE, recompile = TRUE)
 
 test_that('Custom package S3 replacement works', {

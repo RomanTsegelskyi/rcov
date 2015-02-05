@@ -10,6 +10,6 @@ License: ???
 Depends: 
     R (>= 3.0.0)
 Imports: 
-    utils
+    utils,
     devtools
 Suggests: testthat
