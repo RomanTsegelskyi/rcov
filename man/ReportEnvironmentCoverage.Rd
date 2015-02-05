@@ -4,14 +4,14 @@
 \alias{ReportEnvironmentCoverage}
 \title{Measure coverage of an environment}
 \usage{
-ReportEnvironmentCoverage(envir, ..., enclos = parent.frame())
+ReportEnvironmentCoverage(envir, package.name, tests, enclos = parent.frame())
 }
 \arguments{
 \item{envir}{environment to monitor coverage in}
 
-\item{...}{for specific tests separeted by commas}
-
 \item{enclos}{environment where tests should be evaluated}
+
+\item{...}{for specific tests separeted by commas}
 }
 \description{
 Monitor coverage of an environment using tests

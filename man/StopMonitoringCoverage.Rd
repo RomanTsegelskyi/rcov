@@ -4,12 +4,12 @@
 \alias{StopMonitoringCoverage}
 \title{Stop monitoring coverage for a function}
 \usage{
-StopMonitoringCoverage(func, envir)
+StopMonitoringCoverage(func, package.name)
 }
 \arguments{
 \item{func}{function or function name}
 
-\item{envir}{environment where function with coverage annotation was placed. Primeraly used for debugging purposes}
+\item{package.name}{optional name of the package for function replacement}
 }
 \description{
 Function stop clears the annotation added to monitor coverage

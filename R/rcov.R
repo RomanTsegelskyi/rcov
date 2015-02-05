@@ -2,10 +2,10 @@
 #'
 #' Decorate function body to be able to measure coverage. Function object is replaced in a proper namespace
 #' @param func function object to be monitored
-#' @param envir environment where to place the function. Primeraly used for debugging purposes
+#' @param package.name optional name of the package for function replacement
 #' @import utils
 #' @export
-MonitorCoverage <- function(func, envir) {
+MonitorCoverage <- function(func, package.name) {
     ### TODO check if function in not found in any environment
     if (is.character(func)) {
         getAW <- getAnywhere(func)
@@ -14,8 +14,8 @@ MonitorCoverage <- function(func, envir) {
                 warning("Found multiple instances. Taking the one from GlobalEnv")
             } 
         } else {
-            if (length(getAW$where) > 2) {
-                warning("Function found in more than one package. Please supply the exact function")
+            if (length(grep("^namespace:", getAW$where)) > 1 && missing(package.name)) {
+                warning(sprintf("Function %s found in more than one package. Please supply the exact function", func))
                 return(NULL);
             }
         }
@@ -28,27 +28,26 @@ MonitorCoverage <- function(func, envir) {
         warning("Supplied argument is neither a function object or a function name")
         return(NULL)
     }
+    if (missing(package.name)){
+        package.name <-gsub('namespace:',  "\\1",getAnywhere(func.name)$where[grep("^namespace", getAnywhere(func.name)$where)])
+    } else {
+        func.obj <- get(func.name, getNamespace(package.name))
+    }
     if (!is.function(func.obj))
         return(NULL)
-    cat("Func name - ", func.name, "\n")
     new.func <- MonitorCoverageHelper(func.obj, func.name)
     environment(new.func) <- environment(func.obj)
-    if (missing(envir)){
-        package.name <-gsub('namespace:',  "\\1",getAnywhere(func.name)$where[grep("^namespace", getAnywhere(func.name)$where)])
-        if (length(package.name) > 0) {
-            func.package.namespace <- getNamespace(package.name)   
-            func.package.env <- as.environment(paste("package", package.name, sep=":"))
-            reassignInEnv(func.name, new.func, func.package.namespace)
-            reassignInEnv(func.name, new.func, func.package.env)
-            if (any(grepl('registered S3 method', getAnywhere(func.name)$where))) { # checking if its an S3 method
-                S3Table <- get(".__S3MethodsTable__.", envir = getNamespace(package.name))
-                assign(func.name, new.func, S3Table)
-            }
-        } else {
-            assign(func.name, new.func, envir = .GlobalEnv)
+    if (length(package.name) > 0) {
+        func.package.namespace <- getNamespace(package.name)   
+        func.package.env <- as.environment(paste("package", package.name, sep=":"))
+        reassignInEnv(func.name, new.func, func.package.namespace)
+        reassignInEnv(func.name, new.func, func.package.env)
+        if (any(grepl('registered S3 method', getAnywhere(func.name)$where))) { # checking if its an S3 method
+            S3Table <- get(".__S3MethodsTable__.", envir = getNamespace(package.name))
+            assign(func.name, new.func, S3Table)
         }
     } else {
-        assign(func.name, new.func, envir = envir)
+        assign(func.name, new.func, envir = .GlobalEnv)
     }
     assign(func.name, vector(length=(cache$k - 1)), envir = cov.cache)
     assign(func.name, func.obj, envir = func.cache)
@@ -80,9 +79,9 @@ MonitorCoverageHelper <- function(func.obj, func.name) {
 #'
 #' Function stop clears the annotation added to monitor coverage
 #' @param func function or function name
-#' @param envir environment where function with coverage annotation was placed. Primeraly used for debugging purposes
+#' @param package.name optional name of the package for function replacement
 #' @export
-StopMonitoringCoverage <- function(func, envir) {
+StopMonitoringCoverage <- function(func, package.name) {
     if (is.character(func)) {
         func.name <- func
     } else if (is.function(func)) {
@@ -90,23 +89,21 @@ StopMonitoringCoverage <- function(func, envir) {
     } else {
         stop("Supplied argument is neither a function object or a function name")
     }
+    if (missing(package.name)) {
+        package.name <-gsub('namespace:',  "\\1",getAnywhere(func.name)$where[grep("^namespace", getAnywhere(func.name)$where)])
+    }
     if (func.name %in% ls(func.cache)) {
-        if (missing(envir)) {
-            package.name <-gsub('namespace:',  "\\1",getAnywhere(func.name)$where[grep("^namespace", getAnywhere(func.name)$where)])
-            if (length(package.name) > 0) {
-                func.package.namespace <- getNamespace(package.name)   
-                func.package.env <- as.environment(paste("package", package.name, sep=":"))
-                reassignInEnv(func.name, func.cache[[func.name]], func.package.namespace)
-                reassignInEnv(func.name, func.cache[[func.name]], func.package.env)
-                if (any(grepl('registered S3 method', getAnywhere(func.name)$where))) { # checking if its an S3 method
-                    S3Table <- get(".__S3MethodsTable__.", envir = getNamespace(package.name))
-                    assign(func.name, func.cache[[func.name]], S3Table)
-                }
-            } else {
-                assign(func.name, func.cache[[func.name]], envir = .GlobalEnv)
+        if (length(package.name) > 0) {
+            func.package.namespace <- getNamespace(package.name)   
+            func.package.env <- as.environment(paste("package", package.name, sep=":"))
+            reassignInEnv(func.name, func.cache[[func.name]], func.package.namespace)
+            reassignInEnv(func.name, func.cache[[func.name]], func.package.env)
+            if (any(grepl('registered S3 method', getAnywhere(func.name)$where))) { # checking if its an S3 method
+                S3Table <- get(".__S3MethodsTable__.", envir = getNamespace(package.name))
+                assign(func.name, func.cache[[func.name]], S3Table)
             }
         } else {
-            assign(func.name, func.cache[[func.name]], envir = envir)
+            assign(func.name, func.cache[[func.name]], envir = .GlobalEnv)
         }
         rm(list = c(func.name), envir = func.cache)
         rm(list = c(func.name), envir = cov.cache)

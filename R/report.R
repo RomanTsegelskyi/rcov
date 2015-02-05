@@ -1,3 +1,4 @@
+
 #' Measure coverage of files using tests
 #'
 #' Monitor coverage for functions while executing test files
@@ -77,13 +78,14 @@ ReportPackageCoverage <- function(package.dir, ...) {
     tests <- eval(substitute(alist(...)))
     if (file.exists(test.dir) || length(tests) > 0) {
         ns <- devtools::load_all(package.dir, export_all = FALSE, quiet = TRUE, recompile = TRUE)$env
+        package.name <- ns$.packageName
         env <- new.env(parent = ns)
         tests <-
             c(tests,
               if (file.exists(test.dir)) {
                   bquote(try(testthat::source_dir(path = .(test.dir), env = .(env))))
               })
-        res <- ReportEnvironmentCoverage(ns, tests, enclos = .GlobalEnv)
+        res <- ReportEnvironmentCoverage(ns, package.name, tests, enclos = .GlobalEnv)
     }
     res
 }
@@ -95,14 +97,14 @@ ReportPackageCoverage <- function(package.dir, ...) {
 #' @param ... for specific tests separeted by commas
 #' @param enclos environment where tests should be evaluated
 #' @export
-ReportEnvironmentCoverage <- function(envir, tests, enclos = parent.frame()) {
+ReportEnvironmentCoverage <- function(envir, package.name, tests, enclos = parent.frame()) {
 #     tests <- eval(substitute(alist(...)))
     objects <- ls(envir)
-    sapply(objects, MonitorCoverage)
+    sapply(objects, MonitorCoverage, package.name)
     for (test in tests) {
         eval(test, enclos)
     }
     res <- ReportCoverageInfo()
-    sapply(objects, StopMonitoringCoverage)
+    sapply(objects, StopMonitoringCoverage, package.name)
     res
 }
