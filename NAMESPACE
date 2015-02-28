@@ -3,6 +3,7 @@
 export(MonitorCoverage)
 export(ReportCoverageFiles)
 export(ReportCoverageInfo)
+export(ReportCoveragePercentage)
 export(ReportEnvironmentCoverage)
 export(ReportPackageCoverage)
 export(StopMonitoringCoverage)

@@ -183,6 +183,15 @@ ReportCoverageInfo <- function(){
     cov.data
 }
 
+#' Report Coverage Percentage Only
+#'
+#' @return numeric with coverage percentage
+#' @export
+ReportCoveragePercentage <- function() {
+    cov.data <- ReportCoverageInfo()
+    sum(cov.data$cov)/length(cov.data$cov)
+}
+
 #' Write down that line was executed
 #'
 #' Record that particual line was executed. Used in statement coverage, needed for namespace replacement
