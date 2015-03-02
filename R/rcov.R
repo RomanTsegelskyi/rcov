@@ -199,6 +199,7 @@ ReportCoveragePercentage <- function() {
     sum(cov.data$cov)/length(cov.data$cov)
 }
 
+#" Record coverage option
 record.coverage <- FALSE
 
 #' Write down that line was executed
