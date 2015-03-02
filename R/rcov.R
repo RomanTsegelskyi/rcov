@@ -9,6 +9,8 @@ MonitorCoverage <- function(func, package.name) {
     ### TODO check if function in not found in any environment
     if (is.character(func)) {
         getAW <- getAnywhere(func)
+        if (length(getAW$where) == 0)
+            return(NULL)
         if (getAW$where[1] == '.GlobalEnv') {
             if (length(getAW$where) > 1) {
                 warning("Found multiple instances. Taking the one from GlobalEnv")
@@ -28,13 +30,17 @@ MonitorCoverage <- function(func, package.name) {
         warning("Supplied argument is neither a function object or a function name")
         return(NULL)
     }
+    if (!is.function(func.obj) 
+        || func.name == "last.warning" || func.name == "isNamespace" || func.name == "as.character" 
+        || func.name == "substitute" || func.name == "get" || func.name == "asNamespace")
+        return(NULL)
+    if (is.null(body(func.obj)))
+        return(NULL)
     if (missing(package.name)){
         package.name <-gsub('namespace:',  "\\1",getAnywhere(func.name)$where[grep("^namespace", getAnywhere(func.name)$where)])
     } else {
         func.obj <- get(func.name, getNamespace(package.name))
     }
-    if (!is.function(func.obj))
-        return(NULL)
     new.func <- MonitorCoverageHelper(func.obj, func.name)
     environment(new.func) <- environment(func.obj)
     if (length(package.name) > 0) {
@@ -49,7 +55,8 @@ MonitorCoverage <- function(func, package.name) {
     } else {
         assign(func.name, new.func, envir = .GlobalEnv)
     }
-    assign(func.name, vector(length=(cache$k - 1)), envir = cov.cache)
+    if (!func.name %in% ls(cov.cache))
+      assign(func.name, vector(length=(cache$k - 1)), envir = cov.cache)
     assign(func.name, func.obj, envir = func.cache)
     rm('k', envir = cache)
     rm('func.name', envir = cache)
@@ -134,7 +141,7 @@ CoverageAnnotationDecorator <- function(stmt.list) {
                                             stmt.list[[i]]))
             }
         } else {
-            if (is.symbol(stmt.list[[i]]) || stmt.list[[i]][[1]] != 'switch'){
+            if (is.symbol(stmt.list[[i]]) || stmt.list[[i]][[1]] != 'switch' || is.na(stmt.list[[i]]) || is.null(stmt.list[[i]])){
                 stmt.list[[i]] <- as.call(c(as.name("{"), 
                                             parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, cache$k)), 
                                             stmt.list[[i]]))
@@ -192,11 +199,14 @@ ReportCoveragePercentage <- function() {
     sum(cov.data$cov)/length(cov.data$cov)
 }
 
+record.coverage <- FALSE
+
 #' Write down that line was executed
 #'
 #' Record that particual line was executed. Used in statement coverage, needed for namespace replacement
 #' @param func.name function name
 #' @param line.number line.number
 SetExecuteValue <- function(func.name, line.number) {
-    cov.cache[[func.name]][line.number] <- TRUE
+    if (record.coverage)
+        cov.cache[[func.name]][line.number] <- TRUE
 }

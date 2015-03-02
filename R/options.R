@@ -29,7 +29,6 @@
 cov.cache <- new.env()
 cache <- new.env()
 func.cache <- new.env()
-
 #' Querying/setting rcov option
 #'
 #' To list all \code{rcov} options, just run this function without any parameters provided. To query only one value, pass the first parameter. To set that, use the \code{value} parameter too.
