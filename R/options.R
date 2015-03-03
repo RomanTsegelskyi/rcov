@@ -28,6 +28,7 @@
 ## general (temporary) storage for rcov's stuff
 cov.cache <- new.env()
 cache <- new.env()
+cache$record.coverage <- TRUE
 func.cache <- new.env()
 #' Querying/setting rcov option
 #'

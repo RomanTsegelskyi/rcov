@@ -32,7 +32,9 @@ MonitorCoverage <- function(func, package.name) {
     }
     if (!is.function(func.obj) 
         || func.name == "last.warning" || func.name == "isNamespace" || func.name == "as.character" 
-        || func.name == "substitute" || func.name == "get" || func.name == "asNamespace")
+        || func.name == "substitute" || func.name == "get" || func.name == "asNamespace" 
+        || func.name == "getNamespace" || func.name == ":::"
+        || func.name == "as.name")
         return(NULL)
     if (is.null(body(func.obj)))
         return(NULL)
@@ -179,14 +181,16 @@ IsControlFlow <- function(stmt){
 #' total number of statements, number of non-executed statement, line coverage percentage.
 #' @return data.frame with coverage information
 #' @export
-ReportCoverageInfo <- function(){
+ReportCoverageInfo <- function(cov.env){
+    if (missing(cov.env))
+        cov.env <- cov.cache
     cov.data <- data.frame(stmt = integer(0), mstmt = integer(0), cov = numeric(0))
-    for(func in ls(cov.cache)) {
-        cov.data <- do.call(rbind, list(cov.data, data.frame(stmt = length(cov.cache[[func]]), 
-                                                             mstmt = length(cov.cache[[func]]) - sum(cov.cache[[func]]), 
-                                                             cov = sum(cov.cache[[func]])/length(cov.cache[[func]]))))
+    for(func in ls(cov.env)) {
+        cov.data <- do.call(rbind, list(cov.data, data.frame(stmt = length(cov.env[[func]]), 
+                                                             mstmt = length(cov.env[[func]]) - sum(cov.env[[func]]), 
+                                                             cov = sum(cov.env[[func]])/length(cov.env[[func]]))))
     }
-    row.names(cov.data) <- ls(cov.cache)
+    row.names(cov.data) <- ls(cov.env)
     cov.data
 }
 
@@ -194,13 +198,21 @@ ReportCoverageInfo <- function(){
 #'
 #' @return numeric with coverage percentage
 #' @export
-ReportCoveragePercentage <- function() {
-    cov.data <- ReportCoverageInfo()
+ReportCoveragePercentage <- function(cov.env) {
+    if (!missing(cov.env))
+        cov.data <- ReportCoverageInfo(cov.env)
+    else 
+        cov.data <- ReportCoverageInfo(cov.env)
     sum(cov.data$cov)/length(cov.data$cov)
 }
 
-#" Record coverage option
-record.coverage <- FALSE
+#' Pause monitoring coverage
+#' @export
+PauseMonitorCoverage <- function() cache$record.coverage <- FALSE
+
+#' Pause monitoring coverage
+#' @export
+ResumeMonitorCoverage <- function() cache$record.coverage <- TRUE
 
 #' Write down that line was executed
 #'
@@ -208,6 +220,6 @@ record.coverage <- FALSE
 #' @param func.name function name
 #' @param line.number line.number
 SetExecuteValue <- function(func.name, line.number) {
-    if (record.coverage)
+    if (cache$record.coverage)
         cov.cache[[func.name]][line.number] <- TRUE
 }
