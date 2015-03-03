@@ -144,16 +144,18 @@ CoverageAnnotationDecorator <- function(stmt.list) {
             }
         } else {
             if (is.symbol(stmt.list[[i]]) || stmt.list[[i]][[1]] != 'switch' || is.na(stmt.list[[i]]) || is.null(stmt.list[[i]])){
-                if (!is.null(stmt.list[[i]])) {
-                    stmt.list[[i]] <- as.call(c(as.name("{"), 
-                                                parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, cache$k)), 
-                                                stmt.list[[i]]))
-                } else {
-                    stmt.list[[i]] <- as.call(c(as.name("{"), 
-                                                parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)\nNULL", cache$func.name, cache$k))
-                    ))
+                if (!stmt.list[[i]] == "") {
+                    if (!is.null(stmt.list[[i]])) {
+                        stmt.list[[i]] <- as.call(c(as.name("{"), 
+                                                    parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, cache$k)), 
+                                                    stmt.list[[i]]))
+                    } else {
+                        stmt.list[[i]] <- as.call(c(as.name("{"), 
+                                                    parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)\nNULL", cache$func.name, cache$k)),
+                        ))
+                    }
+                    cache$k <- cache$k + 1
                 }
-                cache$k <- cache$k + 1
             } else {
                 temp.k <- cache$k
                 cache$k <- cache$k + 1
