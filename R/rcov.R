@@ -6,7 +6,6 @@
 #' @import utils
 #' @export
 MonitorCoverage <- function(func, package.name) {
-    ### TODO check if function in not found in any environment
     if (is.character(func)) {
         getAW <- getAnywhere(func)
         if (length(getAW$where) == 0)
@@ -33,7 +32,7 @@ MonitorCoverage <- function(func, package.name) {
     if (!is.function(func.obj) 
         || func.name == "last.warning" || func.name == "isNamespace" || func.name == "as.character" 
         || func.name == "substitute" || func.name == "get" || func.name == "asNamespace" 
-        || func.name == "getNamespace" || func.name == ":::"
+        || func.name == "getNamespace" || func.name == ":::" || func.name == "mode"
         || func.name == "as.name")
         return(NULL)
     if (is.null(body(func.obj)))
@@ -44,6 +43,7 @@ MonitorCoverage <- function(func, package.name) {
         func.obj <- get(func.name, getNamespace(package.name))
     }
     new.func <- MonitorCoverageHelper(func.obj, func.name)
+    cov.funcs[[func.name]] <- new.func
     environment(new.func) <- environment(func.obj)
     if (length(package.name) > 0) {
         func.package.namespace <- getNamespace(package.name)   
@@ -58,7 +58,7 @@ MonitorCoverage <- function(func, package.name) {
         assign(func.name, new.func, envir = .GlobalEnv)
     }
     if (!func.name %in% ls(cov.cache))
-      assign(func.name, vector(length=(cache$k - 1)), envir = cov.cache)
+        assign(func.name, vector(length=(cache$k - 1)), envir = cov.cache)
     assign(func.name, func.obj, envir = func.cache)
     rm('k', envir = cache)
     rm('func.name', envir = cache)
@@ -144,9 +144,15 @@ CoverageAnnotationDecorator <- function(stmt.list) {
             }
         } else {
             if (is.symbol(stmt.list[[i]]) || stmt.list[[i]][[1]] != 'switch' || is.na(stmt.list[[i]]) || is.null(stmt.list[[i]])){
-                stmt.list[[i]] <- as.call(c(as.name("{"), 
-                                            parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, cache$k)), 
-                                            stmt.list[[i]]))
+                if (!is.null(stmt.list[[i]])) {
+                    stmt.list[[i]] <- as.call(c(as.name("{"), 
+                                                parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, cache$k)), 
+                                                stmt.list[[i]]))
+                } else {
+                    stmt.list[[i]] <- as.call(c(as.name("{"), 
+                                                parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)\nNULL", cache$func.name, cache$k))
+                    ))
+                }
                 cache$k <- cache$k + 1
             } else {
                 temp.k <- cache$k

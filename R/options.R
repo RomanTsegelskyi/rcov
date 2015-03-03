@@ -27,6 +27,7 @@
 
 ## general (temporary) storage for rcov's stuff
 cov.cache <- new.env()
+cov.funcs <- new.env() # environment to save decorate functions
 cache <- new.env()
 cache$record.coverage <- TRUE
 func.cache <- new.env()
