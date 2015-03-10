@@ -11,7 +11,7 @@ It can be installed easily with the nifty function of the `devtools` package fro
 
 ```r
 library(devtools)
-install_github('rcov', 'RomanTsegelskyi')
+install_github('allr/rcov')
 ```
 
 Or download the [sources](https://github.com/RomanTsegelskyi/rcov/archive/master.zip) and build manually. If you're running R on Windows, you need to install [Rtools](http://cran.stat.ucla.edu/bin/windows/Rtools/).
