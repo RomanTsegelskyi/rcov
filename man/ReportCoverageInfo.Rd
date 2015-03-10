@@ -4,7 +4,7 @@
 \alias{ReportCoverageInfo}
 \title{Report Coverage Information}
 \usage{
-ReportCoverageInfo()
+ReportCoverageInfo(cov.env)
 }
 \value{
 data.frame with coverage information

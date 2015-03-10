@@ -4,7 +4,7 @@
 \alias{ReportCoveragePercentage}
 \title{Report Coverage Percentage Only}
 \usage{
-ReportCoveragePercentage()
+ReportCoveragePercentage(cov.env)
 }
 \value{
 numeric with coverage percentage

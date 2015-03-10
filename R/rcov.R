@@ -78,6 +78,7 @@ MonitorCoverageHelper <- function(func.obj, func.name) {
         func.body <- as.call(c(as.name("{"), body(func.obj)))
     } 
     new.func <- function(...){}
+    statements[[cache$func.name]] <- list()
     new.func.body <- CoverageAnnotationDecorator(as.list(func.body)[-1])
     formals(new.func) <- formals(func.obj)
     body(new.func) <- as.call(c(as.name('{'), new.func.body))
@@ -137,15 +138,18 @@ CoverageAnnotationDecorator <- function(stmt.list) {
                 temp.k <- cache$k
                 cache$k <- cache$k + 1
                 decl <- unlist(CoverageAnnotationDecorator(as.list(stmt.list[[i]])[-(1:3)]))
+                statements[[cache$func.name]][[cache$k]] <- stmt.list[[i]]
                 stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], stmt.list[[i]][[2]],  stmt.list[[i]][[3]], decl))
                 stmt.list[[i]] <- as.call(c(as.name("{"), 
                                             parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, temp.k)), 
                                             stmt.list[[i]]))
+                
             }
         } else {
             if (is.symbol(stmt.list[[i]]) || stmt.list[[i]][[1]] != 'switch' || is.na(stmt.list[[i]]) || is.null(stmt.list[[i]])){
-                if (is.na(stmt.list[[i]]) || is.null(stmt.list[[i]]) || !stmt.list[[i]] == "") {
-                    if (!is.null(stmt.list[[i]])) {
+                if (suppressWarnings(is.na(stmt.list[[i]])) || suppressWarnings(is.null(stmt.list[[i]])) || !stmt.list[[i]] == "") {
+                    statements[[cache$func.name]][[cache$k]] <- stmt.list[[i]]
+                    if (!suppressWarnings(is.null(stmt.list[[i]]))) {
                         stmt.list[[i]] <- as.call(c(as.name("{"), 
                                                     parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, cache$k)), 
                                                     stmt.list[[i]]))
@@ -160,6 +164,7 @@ CoverageAnnotationDecorator <- function(stmt.list) {
                 temp.k <- cache$k
                 cache$k <- cache$k + 1
                 decl <- unlist(CoverageAnnotationDecorator(as.list(stmt.list[[i]])[-(1:2)]))
+                statements[[cache$func.name]][[temp.k]] <- stmt.list[[i]]
                 stmt.list[[i]] <- as.call(c(stmt.list[[i]][[1]], stmt.list[[i]][[2]], decl))
                 stmt.list[[i]] <- as.call(c(as.name("{"), 
                                             parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, temp.k)), 
@@ -200,6 +205,20 @@ ReportCoverageInfo <- function(cov.env){
     }
     row.names(cov.data) <- ls(cov.env)
     cov.data
+}
+
+
+#' Report Missing Statements
+#' @return list of lists of missing statements by function that coverage was monitored for
+#' @export
+ReportMissingStatements <- function(){
+    res <- lapply(ls(statements), 
+           function(x) {
+               s <- statements[[x]]
+               unlist(s[!cov.cache[[x]]])
+        })
+    names(res) <- ls(statements)
+    res
 }
 
 #' Report Coverage Percentage Only

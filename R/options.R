@@ -31,6 +31,7 @@ cov.funcs <- new.env() # environment to save decorate functions
 cache <- new.env()
 cache$record.coverage <- TRUE
 func.cache <- new.env()
+statements <- new.env()
 #' Querying/setting rcov option
 #'
 #' To list all \code{rcov} options, just run this function without any parameters provided. To query only one value, pass the first parameter. To set that, use the \code{value} parameter too.
