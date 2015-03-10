@@ -32,7 +32,7 @@ MonitorCoverage <- function(func, package.name) {
     if (!is.function(func.obj) 
         || func.name == "last.warning" || func.name == "isNamespace" || func.name == "as.character" 
         || func.name == "substitute" || func.name == "get" || func.name == "asNamespace" 
-        || func.name == "getNamespace" || func.name == ":::" || func.name == "mode"
+        || func.name == "getNamespace" || func.name == ":::"
         || func.name == "as.name")
         return(NULL)
     if (is.null(body(func.obj)))
@@ -144,14 +144,14 @@ CoverageAnnotationDecorator <- function(stmt.list) {
             }
         } else {
             if (is.symbol(stmt.list[[i]]) || stmt.list[[i]][[1]] != 'switch' || is.na(stmt.list[[i]]) || is.null(stmt.list[[i]])){
-                if (!stmt.list[[i]] == "") {
+                if (is.na(stmt.list[[i]]) || is.null(stmt.list[[i]]) || !stmt.list[[i]] == "") {
                     if (!is.null(stmt.list[[i]])) {
                         stmt.list[[i]] <- as.call(c(as.name("{"), 
                                                     parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)", cache$func.name, cache$k)), 
                                                     stmt.list[[i]]))
                     } else {
                         stmt.list[[i]] <- as.call(c(as.name("{"), 
-                                                    parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)\nNULL", cache$func.name, cache$k)),
+                                                    parse(text=sprintf("rcov:::SetExecuteValue('%s', %d)\nNULL", cache$func.name, cache$k))
                         ))
                     }
                     cache$k <- cache$k + 1
