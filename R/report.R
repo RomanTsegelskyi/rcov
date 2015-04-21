@@ -108,4 +108,3 @@ ReportEnvironmentCoverage <- function(envir, package.name, tests, enclos = paren
     sapply(objects, StopMonitoringCoverage, package.name)
     res
 }
-

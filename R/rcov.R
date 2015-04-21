@@ -250,3 +250,11 @@ SetExecuteValue <- function(func.name, line.number) {
     if (cache$record.coverage)
         cov.cache[[func.name]][line.number] <- TRUE
 }
+
+#' Reset Coverage info
+#'
+#'@export
+ResetCoverageInfo <- function() {
+    for (func in ls(cov.cache))
+        cov.cache[[func]] <- vector(length=length(cov.cache[[func]]))
+}
