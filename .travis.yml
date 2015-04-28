@@ -3,10 +3,9 @@ warnings_are_errors: false
 env: _R_CHECK_CRAN_INCOMING_=FALSE
 
 r_github_packages:
-  - allr/rcov
   - jimhester/covr
+  - allr/rcov
 
 after_success:
   - source shim_package.sh
-  - Rscript -e 'devtools::install()'
   - Rscript -e 'library(covr);coveralls()'
